@@ -1,5 +1,5 @@
 
-import UniversalLibrary as UL
+#import UniversalLibrary as UL
 import numpy
 import time
 
@@ -20,17 +20,17 @@ class daq():
         self.CurrentOffset = 0
         
     def sampleTorque(self):
-        Gain = UL.BIP5VOLTS
+        '''Gain = UL.BIP5VOLTS
         Chan = 0
         try:
             DataValue = UL.cbAIn(self.BoardNum, Chan, Gain)
-            engUnits = UL.cbToEngUnits(self.BoardNum, Gain, DataValue)
+            #engUnits = UL.cbToEngUnits(self.BoardNum, Gain, DataValue)
             self.Torque = 2.26*engUnits# - self.TorqueOffset;
         except:
             pass
-        
+        '''
     def sampleVoltage(self):
-        Gain = UL.BIP5VOLTS
+        '''Gain = UL.BIP5VOLTS
         Chan = 1
         try:
             DataValue = UL.cbAIn(self.BoardNum, Chan, Gain)
@@ -38,9 +38,9 @@ class daq():
             self.Voltage = -1*((engUnits-2.5)*20.2030 - self.VoltageOffset);
         except:
             pass
-        
+        '''
     def sampleCurrent(self):
-        Gain = UL.BIP5VOLTS
+        '''Gain = UL.BIP5VOLTS
         Chan = 2
         try:
             DataValue = UL.cbAIn(self.BoardNum, Chan, Gain)
@@ -48,15 +48,15 @@ class daq():
             self.Current = (engUnits)/.02 - self.CurrentOffset;
         except:
             pass
-        
+        '''
     def sampleCount(self):
-        Chan = 0;
+        '''Chan = 0;
         DataValue = 0
         try:
             self.Count =  UL.cbCIn(self.BoardNum, Chan, DataValue)
         except:
             pass
-        
+        '''
     def zero(self):
         current_error = 0
         voltage_error = 0
@@ -107,17 +107,17 @@ class daq():
         Options = UL.CONVERTDATA + UL.BACKGROUND + UL.SINGLEIO
         ADData = numpy.zeros((Count,), dtype=numpy.int16)
 
-        UL.cbAInScan(self.BoardNum, 0, 2, Count, Rate, Gain, ADData, Options)
+        #UL.cbAInScan(self.BoardNum, 0, 2, Count, Rate, Gain, ADData, Options)
         time.sleep(Count/Rate)
         
-        torqueVolts = UL.cbToEngUnits(self.BoardNum, Gain, int(numpy.mean(ADData[0::3])))
-        voltageVolts = UL.cbToEngUnits(self.BoardNum, Gain, int(numpy.mean(ADData[1::3])))
-        currentVolts = UL.cbToEngUnits(self.BoardNum, Gain, int(numpy.mean(ADData[2::3])))
-        print(torqueVolts, voltageVolts, currentVolts)
+        #torqueVolts = UL.cbToEngUnits(self.BoardNum, Gain, int(numpy.mean(ADData[0::3])))
+        #voltageVolts = UL.cbToEngUnits(self.BoardNum, Gain, int(numpy.mean(ADData[1::3])))
+        #currentVolts = UL.cbToEngUnits(self.BoardNum, Gain, int(numpy.mean(ADData[2::3])))
+        #print(torqueVolts, voltageVolts, currentVolts)
         
-        self.Torque = 2.26*torqueVolts - self.TorqueOffset;
-        self.Voltage = -1*((voltageVolts-2.5)*20.2030 - self.VoltageOffset);
-        self.Current = (currentVolts)/.02 - self.CurrentOffset;
+        #self.Torque = 2.26*torqueVolts - self.TorqueOffset;
+        #self.Voltage = -1*((voltageVolts-2.5)*20.2030 - self.VoltageOffset);
+        #self.Current = (currentVolts)/.02 - self.CurrentOffset;
         
     def getTorqueVec(self):
         return self.TorqueVec
@@ -129,4 +129,4 @@ class daq():
         return self.VoltageVec
         
     def getCurrentVec(self):
-        return self.CurrentVec
+        return self.CurrentVecs
