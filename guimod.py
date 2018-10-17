@@ -1,6 +1,7 @@
 #C:\Users\Ben\AppData\Local\Programs\Python\Python35-32\Lib\site-packages\PyQt4\pyuic4.bat -x gui.ui -o gui.py
 from gui import *
 from PyQt5 import QtGui, QtCore
+from PyQt5.QtCore import QThread, pyqtSignal
 import pyqtgraph as pg
 from sampleFunctions import *
 from daq import*
@@ -309,10 +310,13 @@ def sendCmd():
         
 
 def sampleAll():
-    torque_sensor.sampleTorque()
+    
     dynoDaq.sampleAll()
     currentTime = time.time()-tStart
     tVec.append(currentTime)
+    dt = currentTime - tVec[-2]
+    #print(dt)
+    torque_sensor.sampleTorque()
     dataVec = [currentTime, torque_sensor.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
     if(ui.logButton.isChecked()):
         writer.writerow(dataVec)

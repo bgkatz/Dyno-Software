@@ -88,9 +88,9 @@ class daq():
             
         
     def sampleAll(self):
-        self.sampleTorque()
-        self.sampleVoltage()
-        self.sampleCurrent()
+        #self.sampleTorque()
+        #self.sampleVoltage()
+        #self.sampleCurrent()
         
         filteredTorque = self.Torque#.1*self.Torque + .9*self.TorqueVec[-1]
         filteredVoltage = self.Voltage#.1*self.Voltage + .9*self.VoltageVec[-1]
