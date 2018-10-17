@@ -4,6 +4,7 @@ from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
 from sampleFunctions import *
 from daq import*
+from torqueSensor import*
 from absorber import*
 from datalogging import*
 from roadload import*
@@ -26,6 +27,7 @@ list(map(ui.speedSlider.valueChanged.connect, [ui.sBox.setValue, ui.speedSlider.
 list(map(ui.sBox.valueChanged.connect, [ui.speedSlider.setValue, ui.sBox.value]))
 
 dynoDaq = daq(0)
+torque_sensor = torqueSensor('/dev/ttyUSB2')
 dynoAbsorber = absorber('COM3')
 roadload = roadLoad(0, 0, 0)
 buckConverter = buck('COM4')
@@ -213,7 +215,6 @@ def disableBuckControls():
     ui.buckBox.setEnabled(False)
     ui.iMaxBox.setEnabled(False)
 
-
 def disableSelected():
     disableRLControls()
     disableMSControls()
@@ -308,10 +309,11 @@ def sendCmd():
         
 
 def sampleAll():
+    torque_sensor.sampleTorque()
     dynoDaq.sampleAll()
     currentTime = time.time()-tStart
     tVec.append(currentTime)
-    dataVec = [currentTime, dynoDaq.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
+    dataVec = [currentTime, torque_sensor.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
     if(ui.logButton.isChecked()):
         writer.writerow(dataVec)
     #dynoAbsorber.getSpeed()
@@ -350,7 +352,7 @@ ui.stopButton.clicked.connect(lambda:stopSequence())
 
 def refresh():
     #dynoDaq.sampleAll()
-    torqueVec = dynoDaq.TorqueVec[-4000:-1]
+    torqueVec = torque_sensor.TorqueVec[-4000:-1]
     speedVec = dynoAbsorber.speedVec[-4000:-1]
     voltageVec = dynoDaq.VoltageVec[-4000:-1]
     currentVec = dynoDaq.CurrentVec[-4000:-1]
