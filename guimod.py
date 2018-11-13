@@ -28,8 +28,8 @@ ui.setupUi(DynoControlPanel)
 #list(map(ui.sBox.valueChanged.connect, [ui.speedSlider.setValue, ui.sBox.value]))
 
 dynoDaq = daq(0)
-torque_sensor = torqueSensor('COM21')
-dynoAbsorber = absorber('COM23')
+torque_sensor = torqueSensor('/dev/ttyUSB3')
+dynoAbsorber = absorber('/dev/ttyUSB4')
 roadload = roadLoad(0, 0, 0)
 buckConverter = buck('COM4')
 testMotor  = testmotor('COM6')
@@ -373,6 +373,7 @@ ui.stopButton.clicked.connect(lambda:stopSequence())
 
 def refresh():
     #dynoDaq.sampleAll()
+    dynoAbsorber.querySpeed()
     torqueVec = tv[-4000:-1]
     speedVec = dynoAbsorber.speedVec[-4000:-1]
     voltageVec = dynoDaq.VoltageVec[-4000:-1]

@@ -21,7 +21,22 @@ class absorber():
         except:
             print('failed to connect to absorber')
             pass
+
+    def querySpeed(self):
+        try:
+            self.ser.write(b'query w\r')
+            response = self.ser.read(100)
+            r_list = list(response)
+            if(r_list[7] == 13):
+                r_list = r_list[8:-1]
+                r_float = float(bytes(r_list))
+                self.speed = r_float
+        except:
+            pass
+        self.ser.flushInput()
+
     def getSpeed(self):
+
         '''
         packet = [0, 0, 0, 0, 0, 0]
         try:
@@ -72,7 +87,7 @@ class absorber():
             self.ser.write(b'op speed\r')
         except:
             pass
-
+        self.ser.flushInput()
 
 
     def enterTorqueMode(self):
@@ -80,6 +95,7 @@ class absorber():
             self.ser.write(b'op torque\r')
         except:
             pass
+        self.ser.flushInput()
 
     def disable(self):
         self.torquecmd = 0
