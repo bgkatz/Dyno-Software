@@ -1,7 +1,7 @@
-#C:\Users\Ben\AppData\Local\Programs\Python\Python35-32\Lib\site-packages\PyQt4\pyuic4.bat -x gui.ui -o gui.py
+#C:\Users\Ben\AppData\Local\Programs\Python\Python37-32\Scripts\pyuic5.exe -x gui.ui -o gui.py
 from gui import *
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
 import pyqtgraph as pg
 from sampleFunctions import *
 from daq import*
@@ -24,12 +24,12 @@ app = QtGui.QApplication(sys.argv)
 DynoControlPanel = QtGui.QMainWindow()
 ui = Ui_DynoControlPanel()
 ui.setupUi(DynoControlPanel)
-list(map(ui.speedSlider.valueChanged.connect, [ui.sBox.setValue, ui.speedSlider.value]))
-list(map(ui.sBox.valueChanged.connect, [ui.speedSlider.setValue, ui.sBox.value]))
+#list(map(ui.speedSlider.valueChanged.connect, [ui.sBox.setValue, ui.speedSlider.value]))
+#list(map(ui.sBox.valueChanged.connect, [ui.speedSlider.setValue, ui.sBox.value]))
 
 dynoDaq = daq(0)
-torque_sensor = torqueSensor('/dev/ttyUSB2')
-dynoAbsorber = absorber('COM3')
+torque_sensor = torqueSensor('COM21')
+dynoAbsorber = absorber('COM23')
 roadload = roadLoad(0, 0, 0)
 buckConverter = buck('COM4')
 testMotor  = testmotor('COM6')
@@ -40,10 +40,15 @@ time.sleep(.5);
 
 dynoDaq.zero()
 
+
+
+
+
+
 ui.c1Box.setEnabled(False)
 ui.c2Box.setEnabled(False)
 ui.jBox.setEnabled(False)
-ui.speedSlider.setEnabled(False)
+#ui.speedSlider.setEnabled(False)
 ui.sBox.setEnabled(False)
 ui.browseButton.setEnabled(False)
 ui.startButton.setEnabled(False)
@@ -101,6 +106,10 @@ def setBuckVoltage():
     v = ui.buckBox.value()
     buckConverter.setVoltage(v)
     
+def setAbsorberSpeed():
+    s = ui.sBox.value()
+    dynoAbsorber.setSpeed(s)
+
 def setTestMotorPeriod():
     period = ui.periodBox.value()
     testMotor.setPeriod(period)
@@ -189,11 +198,13 @@ def disableRLControls():
     ui.c2Box.setEnabled(False)
 
 def enableMSControls():
-    ui.speedSlider.setEnabled(True)
+   # ui.speedSlider.setEnabled(True)
+    dynoAbsorber.enterSpeedMode()
     ui.sBox.setEnabled(True)
 
+
 def disableMSControls():
-    ui.speedSlider.setEnabled(False)
+    #ui.speedSlider.setEnabled(False)
     ui.sBox.setEnabled(False)
 
 def enableProfileControls():
@@ -222,9 +233,10 @@ def disableSelected():
     disableProfileControls()
     enableBuckControls()
     enableTMControls()
-    ui.speedSlider.setValue(0)
+    #ui.speedSlider.setValue(0)
+    dynoAbsorber.disable()
     ui.sBox.setValue(0)
-    dynoAbsorber.speedcmd = 0
+    
 
 def rlSelected():
     enableRLControls()
@@ -233,7 +245,7 @@ def rlSelected():
     disableMSControls()
     disableProfileControls()
     ui.sBox.setValue(0)
-    ui.speedSlider.setValue(0)
+    #ui.speedSlider.setValue(0)
     #dynoAbsorber.speedcmd = 0
     
 def msSelected():
@@ -250,7 +262,7 @@ def profileSelected():
     disableTMControls()
     disableBuckControls()
     ui.sBox.setValue(0)
-    ui.speedSlider.setValue(0)
+    #ui.speedSlider.setValue(0)
     
 
 def logSelected():
@@ -286,7 +298,7 @@ def sendCmd():
     elif (ui.rlButton.isChecked()):
         setSpeedRef(roadLoadUpdate())
     elif (ui.sButton.isChecked()):
-        setSpeedRef(ui.speedSlider.value())
+        setSpeedRef(ui.sBox.value())
     elif (ui.profileButton.isChecked()):
         if(sequence.enabled):
             sequence.update()
@@ -294,7 +306,7 @@ def sendCmd():
             buckConverter.setVoltage(sequence.voltageSet)
             ui.buckBox.setValue(sequence.voltageSet)
             ui.sBox.setValue(sequence.speedSet)
-            ui.speedSlider.setValue(sequence.speedSet)
+            ui.sBox.setValue(sequence.speedSet)
             if(sequence.cmdType == 'v'):
                 testMotor.setVoltage(sequence.cmdSet)
                 ui.testVSetBox.setValue(sequence.cmdSet)
@@ -308,22 +320,26 @@ def sendCmd():
             dynoAbsorber.disable()
         
         
-
+tv = [0]
 def sampleAll():
     
+    tv.append(torque_sensor.Torque)
     dynoDaq.sampleAll()
+    dynoAbsorber.getSpeed()
     currentTime = time.time()-tStart
     tVec.append(currentTime)
     dt = currentTime - tVec[-2]
     #print(dt)
-    torque_sensor.sampleTorque()
+    
     dataVec = [currentTime, torque_sensor.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
     if(ui.logButton.isChecked()):
         writer.writerow(dataVec)
     #dynoAbsorber.getSpeed()
     #setSpeedRef(ui.speedSlider.value())
-    sendCmd()
-    
+    #sendCmd()
+
+
+
         
 ui.disableButton.setChecked(True)
 
@@ -348,6 +364,7 @@ ui.testVMaxBox.valueChanged.connect(lambda:setTestMotorVoltageLim())
 ui.testVMinBox.valueChanged.connect(lambda:setTestMotorVoltageLim())
 ui.periodMaxBox.valueChanged.connect(lambda:setTestMotorPeriodLim())
 ui.periodMinBox.valueChanged.connect(lambda:setTestMotorPeriodLim())
+ui.sBox.valueChanged.connect(lambda:setAbsorberSpeed())
 ui.canBox.valueChanged.connect(lambda:setTestMotorCAN())
 ui.canMinBox.valueChanged.connect(lambda:setTestMotorCANLim())
 ui.canMaxBox.valueChanged.connect(lambda:setTestMotorCANLim())
@@ -356,7 +373,7 @@ ui.stopButton.clicked.connect(lambda:stopSequence())
 
 def refresh():
     #dynoDaq.sampleAll()
-    torqueVec = torque_sensor.TorqueVec[-4000:-1]
+    torqueVec = tv[-4000:-1]
     speedVec = dynoAbsorber.speedVec[-4000:-1]
     voltageVec = dynoDaq.VoltageVec[-4000:-1]
     currentVec = dynoDaq.CurrentVec[-4000:-1]
@@ -383,17 +400,69 @@ def refresh():
     ui.mpText.setText('%.3f'%(torqueVec[-1]*speedVec[-1]))
     ui.epText.setText('%.3f'%(currentVec[-1]*voltageVec[-1]))
 
+
+class DataObj(QtCore.QObject):
+    def __init__(self):
+        super(DataObj, self).__init__()
+    def sample(self):
+        torque_sensor.continuousSample()
+        #self.signal.emit(motor.data)
+
+
+class PlotObj(QtCore.QObject):
+    def run(self):
+        self.sampleTimer = QtCore.QTimer()
+        self.sampleTimer.timeout.connect(lambda:self.sample())
+        self.sampleTimer.start(50)
+    def sample(self):
+        refresh()
+        #self.signal.emit(motor.data)
+
+#derpThread = DerpThread()
+#dataThread  = DataCollectionThread()
+
+
+
+
+
+
+
+#derpThread.start()
+#dataThread.start()
+#plotThread.start()
     
     #updatePlots([torquePlot, speedPlot, powerPlot], [torqueVec, speedVec , voltageVec])
 
+
+
+
+dataObj = DataObj()
+dataThread = QtCore.QThread()
+dataObj.moveToThread(dataThread)
+#dataObj.sampleTimer.moveToThread(dataThread)
+dataThread.started.connect(dataObj.sample)
+dataThread.start()
+
 sampleTimer = QtCore.QTimer()
+sampleTimer.setTimerType(Qt.PreciseTimer)
 sampleTimer.timeout.connect(lambda:sampleAll())
-sampleTimer.start(1000*ts)
+sampleTimer.start(1000.0*ts)
+
+timerThread = QtCore.QThread()
+sampleTimer.moveToThread(timerThread)
+timerThread.start()
 
 plotTimer = QtCore.QTimer()
 plotTimer.timeout.connect(lambda:refresh())
-plotTimer.start(100)
+plotTimer.start(50)
 
-
+'''
+plotObj = PlotObj()
+plotThread = QtCore.QThread()
+plotObj.moveToThread(plotThread)
+plotThread.started.connect(plotObj.run)
+time.sleep(.2)
+plotThread.start()
+'''
 DynoControlPanel.show()
 sys.exit(app.exec_())

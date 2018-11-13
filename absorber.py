@@ -6,6 +6,7 @@ Created on Sat Aug 27 14:48:26 2016
 """
 import serial
 from struct import *
+import time
 
 class absorber():
     def __init__(self, COM):
@@ -13,13 +14,15 @@ class absorber():
             self.speed = 0
             self.speedVec = [0]
             self.ser = serial.Serial(COM, timeout = .001)
-            self.ser.baudrate = 921600
+            self.ser.baudrate = 115200
             self.speedcmd = 0
+            self.torquecmd = 0
             print('conencted to absorber')
         except:
             print('failed to connect to absorber')
             pass
     def getSpeed(self):
+        '''
         packet = [0, 0, 0, 0, 0, 0]
         try:
             while(self.ser.readable()):
@@ -36,7 +39,8 @@ class absorber():
                     self.ser.flushInput()
                     break
         except:
-            self.speedVec.append(self.speed) #hold previous speed if packet is lost or something            
+            '''
+        self.speedVec.append(self.speed) #hold previous speed if packet is lost or something            
             #data = self.ser.readline()
             #self.speed = float(data)
             #self.speedVec.append(self.speed)
@@ -51,19 +55,35 @@ class absorber():
         return bytes(buff)
         
     def setSpeed(self, speed):
-        self.speedcmd = speed
+        cmd_string = "%.4f" % speed
+        cmd_string =  'setp ' + cmd_string + '\r'
+        print(cmd_string)
         try:
-            self.ser.write(self.packet(speed))
+            self.ser.write(bytes(cmd_string, 'utf-8'))
            # print(self.speed)
             #print(self.ser.readline())
         except:
             pass
-        self.getSpeed();
-        
-    def disable(self):
-        buff = [0, 0, 0, 0, 0, 0]
+        #self.getSpeed()
+        self.ser.flushInput()
+
+    def enterSpeedMode(self):
         try:
-            self.ser.write(buff)
+            self.ser.write(b'op speed\r')
         except:
             pass
-        self.getSpeed();
+
+
+
+    def enterTorqueMode(self):
+        try:
+            self.ser.write(b'op torque\r')
+        except:
+            pass
+
+    def disable(self):
+        self.torquecmd = 0
+        self.enterTorqueMode()
+        time.sleep(.02)
+        #self.setSpeed(0.0)
+    

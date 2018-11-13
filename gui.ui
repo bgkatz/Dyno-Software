@@ -240,19 +240,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QSlider" name="speedSlider">
-         <property name="minimum">
-          <number>-625</number>
-         </property>
-         <property name="maximum">
-          <number>625</number>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="1">
           <widget class="QLabel" name="label_4">
@@ -262,17 +249,23 @@
             </font>
            </property>
            <property name="text">
-            <string>Speed (rad/s)</string>
+            <string>Speed (%)</string>
            </property>
           </widget>
          </item>
          <item row="0" column="2">
           <widget class="QDoubleSpinBox" name="sBox">
+           <property name="decimals">
+            <number>4</number>
+           </property>
            <property name="minimum">
-            <double>-625.000000000000000</double>
+            <double>0.000000000000000</double>
            </property>
            <property name="maximum">
-            <double>625.000000000000000</double>
+            <double>1.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.001000000000000</double>
            </property>
           </widget>
          </item>
