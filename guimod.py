@@ -6,6 +6,7 @@ import pyqtgraph as pg
 from sampleFunctions import *
 from daq import*
 from torqueSensor import*
+from dcSensor import*
 from absorber import*
 from datalogging import*
 from roadload import*
@@ -28,8 +29,9 @@ ui.setupUi(DynoControlPanel)
 #list(map(ui.sBox.valueChanged.connect, [ui.speedSlider.setValue, ui.sBox.value]))
 
 dynoDaq = daq(0)
-torque_sensor = torqueSensor('/dev/ttyUSB3')
-dynoAbsorber = absorber('/dev/ttyUSB4')
+torque_sensor = torqueSensor('/dev/ttyUSB4')
+dynoAbsorber = absorber('/dev/ttyUSB0')
+dclink = dcSensor('/dev/ttyUSB3')
 roadload = roadLoad(0, 0, 0)
 buckConverter = buck('COM4')
 testMotor  = testmotor('COM6')
@@ -228,14 +230,14 @@ def disableBuckControls():
     ui.iMaxBox.setEnabled(False)
 
 def disableSelected():
-    disableRLControls()
-    disableMSControls()
-    disableProfileControls()
-    enableBuckControls()
-    enableTMControls()
-    #ui.speedSlider.setValue(0)
-    dynoAbsorber.disable()
-    ui.sBox.setValue(0)
+	if(ui.disableButton.isChecked()):
+	    disableRLControls()
+	    disableMSControls()
+	    disableProfileControls()
+	    enableBuckControls()
+	    enableTMControls()
+	    dynoAbsorber.disable()
+	    ui.sBox.setValue(0)
     
 
 def rlSelected():
@@ -244,7 +246,7 @@ def rlSelected():
     enableTMControls()
     disableMSControls()
     disableProfileControls()
-    ui.sBox.setValue(0)
+    #ui.sBox.setValue(0)
     #ui.speedSlider.setValue(0)
     #dynoAbsorber.speedcmd = 0
     
@@ -294,7 +296,8 @@ def setSpeedRef(ref):
     
 def sendCmd():
     if(ui.disableButton.isChecked()):
-        dynoAbsorber.disable()
+        pass
+        #dynoAbsorber.disable()
     elif (ui.rlButton.isChecked()):
         setSpeedRef(roadLoadUpdate())
     elif (ui.sButton.isChecked()):
@@ -317,21 +320,26 @@ def sendCmd():
                 testMotor.setCANCmd(sequence.cmdSet, sequence.p1Set, sequence.p2Set)
                 ui.canBox.setValue(sequence.cmdSet)
         else:
-            dynoAbsorber.disable()
+            pass
+            #dynoAbsorber.disable()
         
         
 tv = [0]
+iv = [0]
+vv = [0]
 def sampleAll():
     
     tv.append(torque_sensor.Torque)
-    dynoDaq.sampleAll()
+    iv.append(dclink.Current)
+    vv.append(dclink.Voltage)
+    #dclink.sample()
     dynoAbsorber.getSpeed()
     currentTime = time.time()-tStart
     tVec.append(currentTime)
     dt = currentTime - tVec[-2]
     #print(dt)
     
-    dataVec = [currentTime, torque_sensor.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
+    dataVec = [currentTime, torque_sensor.TorqueVec[-1], dynoAbsorber.speedVec[-1], dclink.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
     if(ui.logButton.isChecked()):
         writer.writerow(dataVec)
     #dynoAbsorber.getSpeed()
@@ -376,8 +384,8 @@ def refresh():
     dynoAbsorber.querySpeed()
     torqueVec = tv[-4000:-1]
     speedVec = dynoAbsorber.speedVec[-4000:-1]
-    voltageVec = dynoDaq.VoltageVec[-4000:-1]
-    currentVec = dynoDaq.CurrentVec[-4000:-1]
+    voltageVec = vv[-4000:-1]
+    currentVec = iv[-4000:-1]
     ePowerVec = [v*i for v, i in zip(voltageVec, currentVec)]    
     powerVec = [t*s for t, s in zip(torqueVec, speedVec)]
     
@@ -409,6 +417,12 @@ class DataObj(QtCore.QObject):
         torque_sensor.continuousSample()
         #self.signal.emit(motor.data)
 
+class DataObj2(QtCore.QObject):
+    def __init__(self):
+        super(DataObj2, self).__init__()
+    def sample(self):
+        dclink.continuousSample()
+        #self.signal.emit(motor.data)
 
 class PlotObj(QtCore.QObject):
     def run(self):
@@ -443,6 +457,13 @@ dataObj.moveToThread(dataThread)
 #dataObj.sampleTimer.moveToThread(dataThread)
 dataThread.started.connect(dataObj.sample)
 dataThread.start()
+
+dataObj2 = DataObj2()
+dataThread2 = QtCore.QThread()
+dataObj2.moveToThread(dataThread2)
+#dataObj.sampleTimer.moveToThread(dataThread)
+dataThread2.started.connect(dataObj2.sample)
+dataThread2.start()
 
 sampleTimer = QtCore.QTimer()
 sampleTimer.setTimerType(Qt.PreciseTimer)

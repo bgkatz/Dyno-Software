@@ -98,8 +98,13 @@ class absorber():
         self.ser.flushInput()
 
     def disable(self):
-        self.torquecmd = 0
-        self.enterTorqueMode()
-        time.sleep(.02)
+        try:
+            self.ser.flushOutput()
+            time.sleep(.01)
+            self.ser.write(b'exit\r')
+            print("exiting")
+        except:
+            pass
+        self.ser.flushInput()
         #self.setSpeed(0.0)
     
