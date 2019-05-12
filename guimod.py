@@ -1,4 +1,4 @@
-#C:\Users\Ben\AppData\Local\Programs\Python\Python35-32\Lib\site-packages\PyQt4\pyuic4.bat -x gui.ui -o gui.py
+#CC:\Users\Ben\AppData\Local\Programs\Python\Python37-32\Scripts\pyuic5.exe -x gui.ui -o gui.py
 from gui import *
 from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
@@ -10,6 +10,7 @@ from roadload import*
 from buck import*
 from testmotor import*
 from sequence import*
+from vesc import *
 import sys
 import time
 import pandas
@@ -26,11 +27,12 @@ list(map(ui.speedSlider.valueChanged.connect, [ui.sBox.setValue, ui.speedSlider.
 list(map(ui.sBox.valueChanged.connect, [ui.speedSlider.setValue, ui.sBox.value]))
 
 dynoDaq = daq(0)
-dynoAbsorber = absorber('COM3')
+dynoAbsorber = absorber('COM4')
 roadload = roadLoad(0, 0, 0)
-buckConverter = buck('COM4')
-testMotor  = testmotor('COM6')
+buckConverter = buck('COM3')
+testMotor  = testmotor('COM5')
 sequence = Sequence()
+vsc = Vesc('COM21')
 
 buckConverter.setVoltage(0)
 time.sleep(.5);
@@ -46,6 +48,7 @@ ui.browseButton.setEnabled(False)
 ui.startButton.setEnabled(False)
 ui.stopButton.setEnabled(False)
 ui.csvEdit.setEnabled(False)
+ui.vescCommand.setEnabled(False)
     
 tVec = [0]
 
@@ -133,6 +136,11 @@ def setTestMotorCANLim():
     ui.canBox.setMinimum(tmin)
     ui.canMinBox.setMaximum(tmax)
     ui.canMaxBox.setMinimum(tmin)
+
+def setVescCurrent():
+    torque = ui.vescCommand.value()
+    vsc.set_current(torque)
+
      
 def roadLoadUpdate():
     roadload.j = ui.jBox.value()
@@ -174,6 +182,9 @@ def disableTMControls():
     ui.canMinBox.setEnabled(False)
     ui.canMaxBox.setEnabled(False)
     ui.canBox.setEnabled(False)
+
+def enableVescControls():
+    ui.vescCommand.setEnabled(True)
     
 def enableRLControls():
     ui.jBox.setEnabled(True)
@@ -249,6 +260,10 @@ def profileSelected():
     disableBuckControls()
     ui.sBox.setValue(0)
     ui.speedSlider.setValue(0)
+
+def vescSelected():
+    enableVescControls()
+    disableTMControls()
     
 
 def logSelected():
@@ -293,7 +308,10 @@ def sendCmd():
             ui.buckBox.setValue(sequence.voltageSet)
             ui.sBox.setValue(sequence.speedSet)
             ui.speedSlider.setValue(sequence.speedSet)
-            if(sequence.cmdType == 'v'):
+            if(ui.vsEnable.isChecked()):
+                vsc.set_torque(sequence.cmdSet)
+                ui.vescCommand.setValue(sequence.cmdSet)
+            elif(sequence.cmdType == 'v'):
                 testMotor.setVoltage(sequence.cmdSet)
                 ui.testVSetBox.setValue(sequence.cmdSet)
             elif(sequence.cmdType == 'dtc'):
@@ -304,6 +322,8 @@ def sendCmd():
                 ui.canBox.setValue(sequence.cmdSet)
         else:
             dynoAbsorber.disable()
+    if(ui.vescEnable.isChecked()):
+        setVescCurrent()
         
         
 
@@ -311,7 +331,8 @@ def sampleAll():
     dynoDaq.sampleAll()
     currentTime = time.time()-tStart
     tVec.append(currentTime)
-    dataVec = [currentTime, dynoDaq.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.p1Set, sequence.p2Set, sequence.flagSet]
+
+    dataVec = [currentTime, dynoDaq.TorqueVec[-1], dynoAbsorber.speedVec[-1], dynoDaq.VoltageVec[-1], dynoDaq.CurrentVec[-1], sequence.cmdSet, sequence.p1Set, sequence.p2Set, sequence.flagSet|ui.flagButton.isChecked()]
     if(ui.logButton.isChecked()):
         writer.writerow(dataVec)
     #dynoAbsorber.getSpeed()
@@ -347,6 +368,8 @@ ui.canMinBox.valueChanged.connect(lambda:setTestMotorCANLim())
 ui.canMaxBox.valueChanged.connect(lambda:setTestMotorCANLim())
 ui.startButton.clicked.connect(lambda:startSequence())
 ui.stopButton.clicked.connect(lambda:stopSequence())
+ui.vescCommand.valueChanged.connect(lambda:setVescCurrent())
+ui.vescEnable.toggled.connect(lambda:vescSelected())
 
 def refresh():
     #dynoDaq.sampleAll()
