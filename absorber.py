@@ -13,7 +13,7 @@ class absorber():
         try:
             self.speed = 0
             self.speedVec = [0]
-            self.ser = serial.Serial(COM, timeout = .001)
+            self.ser = serial.Serial(COM, timeout = .01)
             self.ser.baudrate = 115200
             self.speedcmd = 0
             self.torquecmd = 0
@@ -31,9 +31,10 @@ class absorber():
                 r_list = r_list[8:-1]
                 r_float = float(bytes(r_list))
                 self.speed = r_float
+                self.ser.flushInput()
         except:
             pass
-        self.ser.flushInput()
+        
 
     def getSpeed(self):
 

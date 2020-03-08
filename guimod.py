@@ -1,4 +1,5 @@
-#C:\Users\Ben\AppData\Local\Programs\Python\Python37-32\Scripts\pyuic5.exe -x gui.ui -o gui.py
+# pyuic5  -x gui.ui -o gui.py
+
 from gui import *
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
